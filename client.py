@@ -1,0 +1,141 @@
+# client.py
+# This script implements an MCP (Meta-protocol Communication Platform) client
+# to interact with the MCP server defined in `server.py`.
+# It demonstrates how to connect to the server, list available tools and resources,
+# and call tools with parameters, including those interacting with a database and
+# an external API.
+
+import asyncio
+import re # For parsing note ID from server responses
+from mcp.client.session import ClientSession
+from mcp.client.stdio import stdio_client, StdioServerParameters
+
+# Define the parameters for starting the MCP server using stdio.
+# The client will run `python server.py` to start the server.
+server_params = StdioServerParameters(command="python", args=["server.py"])
+
+async def main():
+    """
+    Main asynchronous function to run the MCP client and interact with the server.
+    """
+    try:
+        # Establish a connection to the server using stdio_client.
+        # This context manager handles starting and stopping the server process.
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            print("Attempting to connect to MCP server via stdio...")
+            # Create an MCP client session using the read and write streams.
+            async with ClientSession(read_stream, write_stream) as session:
+                print("Initializing session...")
+                await session.initialize() # Initialize the MCP session
+                print("MCP Session initialized successfully.")
+
+                # --- List Tools and Resources ---
+                print("\n--- Listing Tools and Resources ---")
+                tools = await session.list_tools()
+                print("Available tools:", tools)
+                resources = await session.list_resources()
+                print("Available resources:", resources)
+
+                # --- Interact with fact_resource ---
+                # This demonstrates reading from an MCP resource.
+                print("\n--- Interacting with fact_resource ---")
+                print("Reading fact resource (fact://random)...")
+                content, mime_type = await session.read_resource("fact://random")
+                print(f"Fact from resource: {content} (MIME: {mime_type})")
+
+                # --- Interact with get_public_fact tool ---
+                # This demonstrates calling an MCP tool that fetches data from an external API.
+                print("\n--- Interacting with get_public_fact tool ---")
+                print("Calling get_public_fact tool...")
+                fact_result = await session.call_tool("get_public_fact")
+                print(f"Fact from tool: {fact_result}")
+
+                # --- Interact with manage_note tool ---
+                # This section demonstrates multiple interactions with the 'manage_note' tool,
+                # covering add, list, view, and delete operations on notes.
+                print("\n--- Interacting with manage_note tool ---")
+                note_id_to_test = None
+
+                # Add a new note
+                print("Calling manage_note (add)...")
+                add_result = await session.call_tool(
+                    "manage_note",
+                    {"action": "add", "content": "My first MCP note!"}
+                )
+                print(f"Add note result: {add_result}")
+
+                # Extract note_id from the server's response string (e.g., "Note added with ID: X")
+                # The actual text is in add_result.content[0].text
+                add_result_text = ""
+                if add_result.content and isinstance(add_result.content, list) and len(add_result.content) > 0:
+                    if hasattr(add_result.content[0], 'text'):
+                        add_result_text = add_result.content[0].text
+
+                match = re.search(r"ID: (\d+)", add_result_text)
+                if match:
+                    note_id_to_test = int(match.group(1))
+                    print(f"Extracted note ID: {note_id_to_test}")
+                else:
+                    print("Could not extract note ID from add result. Will try listing.")
+
+                # List notes (to verify the add operation and potentially find the ID)
+                print("Calling manage_note (list after add)...")
+                list_result_after_add = await session.call_tool("manage_note", {"action": "list"})
+                print(f"Notes after add: {list_result_after_add}")
+
+                # Fallback: If ID wasn't parsed from 'add' response, try to infer from 'list'
+                # This is less robust and assumes the note is identifiable.
+                if note_id_to_test is None and list_result_after_add.content:
+                     if list_result_after_add.content and isinstance(list_result_after_add.content, list) and len(list_result_after_add.content) > 0:
+                        if hasattr(list_result_after_add.content[0], 'text'):
+                            try:
+                                import json
+                                notes_list_json = json.loads(list_result_after_add.content[0].text)
+                                found_note = next((n for n in notes_list_json if n.get("content") == "My first MCP note!"), None)
+                                if found_note and 'id' in found_note:
+                                    note_id_to_test = found_note['id']
+                                    print(f"Inferred note ID from list: {note_id_to_test}")
+                            except json.JSONDecodeError:
+                                print("Could not parse notes list to infer ID.")
+
+
+                if note_id_to_test is not None:
+                    # View the newly added note
+                    print(f"Calling manage_note (view note {note_id_to_test})...")
+                    view_result = await session.call_tool(
+                        "manage_note",
+                        {"action": "view", "note_id": note_id_to_test}
+                    )
+                    print(f"View note {note_id_to_test} result: {view_result}")
+
+                    # Delete the note
+                    print(f"Calling manage_note (delete note {note_id_to_test})...")
+                    delete_result = await session.call_tool(
+                        "manage_note",
+                        {"action": "delete", "note_id": note_id_to_test}
+                    )
+                    print(f"Delete note {note_id_to_test} result: {delete_result}")
+
+                    # List notes again (to verify the delete operation)
+                    print("Calling manage_note (list after delete)...")
+                    list_result_after_delete = await session.call_tool("manage_note", {"action": "list"})
+                    print(f"Notes after delete: {list_result_after_delete}")
+
+                    # Attempt to view the deleted note (should result in "Note not found")
+                    print(f"Calling manage_note (view deleted note {note_id_to_test})...")
+                    view_deleted_result = await session.call_tool(
+                        "manage_note",
+                        {"action": "view", "note_id": note_id_to_test}
+                    )
+                    print(f"View deleted note {note_id_to_test} result: {view_deleted_result}")
+                else:
+                    print("Skipping view/delete tests as note_id could not be determined.")
+
+    except Exception as e:
+        print(f"An error occurred in the client: {e}")
+        import traceback
+        traceback.print_exc()
+
+# Standard Python entry point to run the asyncio event loop with the main function.
+if __name__ == "__main__":
+    asyncio.run(main())
