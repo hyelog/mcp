@@ -10,6 +10,7 @@ import httpx
 import os
 import json # For formatting list of notes as a JSON string
 from mcp.server.fastmcp import FastMCP
+from mcp.common.prompt import prompt
 
 DB_NAME = "mcp_database.db"
 mcp_server = FastMCP("MyMCPServer")
@@ -42,7 +43,11 @@ def init_db():
 init_db()  # Initialize the database when the server starts
 
 @mcp_server.tool()
-def manage_note(action: str, note_id: int = None, content: str = None):
+def manage_note(
+    action: str = prompt("Enter the action (e.g., add, view, delete, list):"),
+    note_id: int = prompt("Enter the note ID (if action is view/delete):", default=None),
+    content: str = prompt("Enter the note content (if action is add):", default=None)
+):
     """
     Manages notes stored in the SQLite database.
 
@@ -65,25 +70,33 @@ def manage_note(action: str, note_id: int = None, content: str = None):
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
 
-        if action == "add" and content:
+        if not action: # Should not happen if prompt is effective and action is not given a default
+             return "Error: Action parameter is required."
+
+        if action == "add":
+            if not content:
+                return "Error: Content is required for 'add' action."
             cursor.execute("INSERT INTO notes (content) VALUES (?)", (content,))
             conn.commit()
             return f"Note added with ID: {cursor.lastrowid}"
-        elif action == "view" and note_id is not None:
+        elif action == "view":
+            if note_id is None: # Check if note_id is None (it could be if default=None and not provided)
+                return "Error: Note ID is required for 'view' action."
             cursor.execute("SELECT content FROM notes WHERE id = ?", (note_id,))
             note = cursor.fetchone()
             return note[0] if note else "Note not found."
-        elif action == "delete" and note_id is not None:
+        elif action == "delete":
+            if note_id is None: # Check if note_id is None
+                return "Error: Note ID is required for 'delete' action."
             cursor.execute("DELETE FROM notes WHERE id = ?", (note_id,))
             conn.commit()
             return f"Note {note_id} deleted." if cursor.rowcount > 0 else "Note not found."
         elif action == "list":
             cursor.execute("SELECT id, content FROM notes")
             notes = cursor.fetchall()
-            # Return a JSON string representing the list of notes
             return json.dumps([{"id": row[0], "content": row[1]} for row in notes])
         else:
-            return "Invalid action or missing parameters."
+            return "Invalid action or missing parameters. Supported actions: add, view, delete, list."
 
     except sqlite3.Error as e:
         return f"Database error: {e}"

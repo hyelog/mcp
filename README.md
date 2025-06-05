@@ -7,7 +7,7 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
 
 -   **`server.py`**:
     -   Implements the MCP server using `FastMCP`.
-    -   Provides a `manage_note` tool for CRUD (Create, Read, Update, Delete) operations on notes. Notes are stored in an SQLite database file named `mcp_database.db` (created automatically in the same directory if it doesn't exist).
+    -   Provides a `manage_note` tool for CRUD (Create, Read, Update, Delete) operations on notes. Notes are stored in an SQLite database file named `mcp_database.db`. If key parameters like `action`, `note_id` (for view/delete), or `content` (for add) are not provided by the client, the server will prompt for them interactively. `client.py` includes a call that demonstrates this prompting behavior.
     -   Provides a `get_public_fact` tool that fetches a random fact from `https://uselessfacts.jsph.pl/api/v2/facts/random`.
     -   Exposes a `fact://random` resource that also provides a random fact.
     -   Provides a `query_codacy` tool that interacts with the Codacy API (requires `CODACY_API_TOKEN` environment variable to be set). It can fetch project-level code quality metrics such as issues and coverage. Parameters include `provider` (e.g., 'gh'), `organization`, `project_name`, and `metric` (e.g., 'issues', 'coverage').

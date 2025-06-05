@@ -166,6 +166,23 @@ async def main():
                 )
                 print(f"Codacy 'coverage' result: {codacy_coverage_result}")
 
+                # --- Demonstrate manage_note prompting ---
+                print("\n--- Demonstrating manage_note server-side prompting ---")
+                print("The following call to 'manage_note' is made with no parameters.")
+                print("If server-side prompting is working, you should see the server asking for 'action', etc.")
+                print("This client is not interactive and will not respond to those prompts.")
+                print("The call might result in an error or timeout here, which is expected for this demo.")
+                try:
+                    # Intentionally call with no parameters to trigger prompts
+                    prompt_demo_result = await session.call_tool(
+                        "manage_note",
+                        {}  # Empty parameters
+                    )
+                    print(f"Prompt demo call result (if it completed): {prompt_demo_result}")
+                except Exception as e_prompt:
+                    print(f"Exception during prompt demo call (this might be expected): {e_prompt}")
+                print("--- End of manage_note prompting demonstration ---")
+
     except Exception as e:
         print(f"An error occurred in the client: {e}")
         import traceback
