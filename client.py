@@ -209,6 +209,35 @@ async def main():
                     print(f"Error calling get_prompt for 'generate_commit_message': {e_get_prompt}")
                 print("--- End of get_prompt demonstration ---")
 
+                # --- Demonstrate ask_openai_llm tool ---
+                print("\n--- Demonstrating 'ask_openai_llm' tool ---")
+                print("NOTE: This tool requires the OPENAI_API_KEY environment variable to be set.")
+                print("If the API key is not set or is invalid, an error message will be shown.")
+
+                example_llm_question = "What are the main benefits of using the Model Context Protocol (MCP)?"
+                print(f"Sending question to LLM: \"{example_llm_question}\"")
+
+                try:
+                    llm_response = await session.call_tool(
+                        "ask_openai_llm",
+                        {"question": example_llm_question}
+                    )
+                    print(f"LLM Response:")
+                    # The response is a direct string from the tool if successful,
+                    # or an error string from the tool itself.
+                    # If session.call_tool itself fails (e.g. tool not found), it would raise an exception.
+                    if hasattr(llm_response, 'content') and isinstance(llm_response.content, list) and len(llm_response.content) > 0:
+                        if hasattr(llm_response.content[0], 'text'):
+                             print(llm_response.content[0].text)
+                        else:
+                            print(str(llm_response.content[0])) # Fallback for unexpected structure
+                    else:
+                        print(str(llm_response)) # Fallback if not a typical MCPMessageBlock structure
+
+                except Exception as e_llm_tool:
+                    print(f"Error calling 'ask_openai_llm' tool: {e_llm_tool}")
+                print("--- End of 'ask_openai_llm' tool demonstration ---")
+
     except Exception as e:
         print(f"An error occurred in the client: {e}")
         import traceback

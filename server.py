@@ -9,6 +9,7 @@ import sqlite3
 import httpx
 import os
 import json # For formatting list of notes as a JSON string
+import openai
 from mcp.server.fastmcp import FastMCP
 from mcp.common.prompt import prompt
 
@@ -199,6 +200,53 @@ def generate_commit_message(changes: str) -> str:
     - str: A formatted string to guide commit message creation.
     """
     return f"Please write a concise and informative commit message for the following changes: \"{changes}\". Structure it with a short subject line (max 50 chars), a blank line, and then a more detailed body if necessary."
+
+@mcp_server.tool()
+async def ask_openai_llm(question: str):
+    """
+    Sends a question to an OpenAI LLM (gpt-4o-mini) and returns the answer.
+    Requires the OPENAI_API_KEY environment variable to be set.
+
+    Parameters:
+    - question (str): The question to ask the LLM.
+
+    Returns:
+    - str: The LLM's response, or an error message.
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return "Error: OPENAI_API_KEY environment variable not set."
+
+    client = openai.AsyncOpenAI()
+
+    try:
+        chat_completion = await client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": question,
+                }
+            ],
+            model="gpt-4o-mini", # Using a recent and capable model
+        )
+        if chat_completion.choices and len(chat_completion.choices) > 0:
+            message = chat_completion.choices[0].message
+            if message and message.content:
+                return message.content.strip()
+            else:
+                return "Error: LLM response was empty or malformed."
+        else:
+            return "Error: No response choices received from LLM."
+    except openai.APIConnectionError as e:
+        return f"OpenAI API Connection Error: {e}"
+    except openai.RateLimitError as e:
+        return f"OpenAI API Rate Limit Error: {e}"
+    except openai.AuthenticationError as e:
+        return f"OpenAI API Authentication Error: {e}. Check your API key."
+    except openai.APIError as e:
+        return f"OpenAI API Error: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred while querying OpenAI: {e}"
 
 # Main execution block to run the MCP server
 if __name__ == "__main__":

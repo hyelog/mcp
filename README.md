@@ -12,12 +12,13 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
     -   Exposes a `fact://random` resource that also provides a random fact.
     -   Provides a `query_codacy` tool that interacts with the Codacy API (requires `CODACY_API_TOKEN` environment variable to be set). It can fetch project-level code quality metrics such as issues and coverage. Parameters include `provider` (e.g., 'gh'), `organization`, `project_name`, and `metric` (e.g., 'issues', 'coverage').
     -   Defines an MCP Prompt named `generate_commit_message` (using `@mcp_server.prompt()`) that takes a `changes` string and returns a formatted string to help guide commit message creation.
+    -   Implements an `ask_openai_llm` tool that takes a `question` string, sends it to an OpenAI LLM (e.g., gpt-4o-mini), and returns the response. Requires the `OPENAI_API_KEY` environment variable.
 -   **`client.py`**:
     -   Implements an MCP client to connect to and interact with `server.py`.
     -   It initializes an MCP session, lists available tools and resources.
     -   It tests the `fact://random` resource and the `get_public_fact` tool.
     -   It tests the `manage_note` tool by adding a note, listing notes, viewing the added note, deleting it, and then attempting to view the deleted note.
-    -   Demonstrates calling the `query_codacy` tool with example parameters, reminding the user to configure their API token and project details. It also shows how to use `session.get_prompt()` to retrieve the `generate_commit_message` MCP Prompt from the server.
+    -   Demonstrates calling the `query_codacy` tool with example parameters, reminding the user to configure their API token and project details. It also shows how to use `session.get_prompt()` to retrieve the `generate_commit_message` MCP Prompt from the server. It further demonstrates calling the `ask_openai_llm` tool to interact with an OpenAI LLM.
 -   **`requirements.txt`**:
     -   Contains the list of Python dependencies required to run the project.
 -   **`mcp_database.db`**:
@@ -37,7 +38,13 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
     For Windows: `set CODACY_API_TOKEN="your_actual_codacy_api_token"`
     Replace `"your_actual_codacy_api_token"` with your personal Codacy API token. The client example also requires you to update placeholder values for provider, organization, and project name to test this feature.
 
-3.  **Run the Client (which starts the Server):**
+3.  **Set OpenAI API Key (Optional for OpenAI LLM feature):**
+    If you intend to use the `ask_openai_llm` tool, you must set the `OPENAI_API_KEY` environment variable.
+    For Linux/macOS: `export OPENAI_API_KEY="your_actual_openai_api_key"`
+    For Windows: `set OPENAI_API_KEY="your_actual_openai_api_key"`
+    Replace `"your_actual_openai_api_key"` with your personal OpenAI API key.
+
+4.  **Run the Client (which starts the Server):**
     Execute the `client.py` script. The client is configured to automatically start the `server.py` script in the background using stdio for communication.
     ```bash
     python client.py
@@ -57,3 +64,4 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
 -   **Error Handling:** Basic error handling in server tools (database and API errors) and client-side error printing.
 -   **Async Operations:** Use of `async` and `await` for non-blocking operations in both server tools (for API calls) and the client.
     -   **MCP Prompts:** Definition and usage of an MCP Prompt (`generate_commit_message`) on the server, callable by clients via `get_prompt`.
+    -   **LLM Integration:** Example of a tool (`ask_openai_llm`) that connects to an external LLM service (OpenAI) to answer questions.
