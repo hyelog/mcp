@@ -131,6 +131,41 @@ async def main():
                 else:
                     print("Skipping view/delete tests as note_id could not be determined.")
 
+                # --- Interacting with query_codacy tool ---
+                print("\n--- Interacting with query_codacy tool ---")
+                print("Reminder: Ensure CODACY_API_TOKEN environment variable is set and update placeholder values for provider, organization, and project_name if you want to test against a real project.")
+
+                codacy_provider = "gh"  # Example: 'gh' for GitHub, 'gl' for GitLab, 'bb' for Bitbucket
+                codacy_organization = "YOUR_ORG_NAME" # Replace with your actual organization name
+                codacy_project_name = "YOUR_REPO_NAME" # Replace with your actual repository name
+
+                # Example: Query for issues
+                print(f"\nAttempting to query Codacy for 'issues' for {codacy_organization}/{codacy_project_name}...")
+                codacy_issues_result = await session.call_tool(
+                    "query_codacy",
+                    {
+                        "provider": codacy_provider,
+                        "organization": codacy_organization,
+                        "project_name": codacy_project_name,
+                        "metric": "issues"
+                    }
+                )
+                print(f"Codacy 'issues' result: {codacy_issues_result}")
+
+                # Example: Query for coverage
+                # Note: Coverage data might only be available if Codacy has processed coverage reports for the project.
+                print(f"\nAttempting to query Codacy for 'coverage' for {codacy_organization}/{codacy_project_name}...")
+                codacy_coverage_result = await session.call_tool(
+                    "query_codacy",
+                    {
+                        "provider": codacy_provider,
+                        "organization": codacy_organization,
+                        "project_name": codacy_project_name,
+                        "metric": "coverage"
+                    }
+                )
+                print(f"Codacy 'coverage' result: {codacy_coverage_result}")
+
     except Exception as e:
         print(f"An error occurred in the client: {e}")
         import traceback

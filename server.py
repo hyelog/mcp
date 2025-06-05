@@ -112,6 +112,57 @@ async def get_public_fact():
     except Exception as e:  # Catch other potential errors like JSONDecodeError
         return f"Error processing fact: {e}"
 
+@mcp_server.tool()
+async def query_codacy(provider: str, organization: str, project_name: str, metric: str = "issues"):
+    """
+    Queries the Codacy API for code quality metrics.
+
+    Parameters:
+    - provider (str): The code hosting provider (e.g., 'gh' for GitHub, 'gl' for GitLab, 'bb' for Bitbucket).
+    - organization (str): The organization name on the provider.
+    - project_name (str): The name of the repository.
+    - metric (str, optional): The metric to query. Supported: "issues", "coverage". Defaults to "issues".
+
+    Returns:
+    - dict or str: A dictionary with the API response or an error message string.
+    """
+    api_token = os.environ.get("CODACY_API_TOKEN")
+    if not api_token:
+        return "Error: CODACY_API_TOKEN environment variable not set."
+
+    # Construct the API URL based on the metric
+    base_url = f"https://api.codacy.com/api/v3/analysis/organizations/{provider}/{organization}/repositories/{project_name}"
+
+    if metric == "issues":
+        api_url = f"{base_url}/issues"
+    elif metric == "coverage":
+        api_url = f"{base_url}/coverage"
+    # Add more metrics here as needed.
+    # For example, to add commit-specific data:
+    # elif metric == "commits":
+    #     api_url = f"{base_url}/commits"
+    else:
+        return f"Error: Unsupported metric '{metric}'. Supported metrics are 'issues', 'coverage'."
+
+    headers = {
+        "api-token": api_token,
+        "Accept": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4XX or 5XX)
+            return response.json()  # Returns the parsed JSON response
+    except httpx.RequestError as e:
+        return f"API request error: {e}. URL: {api_url}"
+    except httpx.HTTPStatusError as e:
+        return f"HTTP status error: {e.response.status_code} - {e.response.text}. URL: {api_url}"
+    except json.JSONDecodeError: # Although httpx.Response.json() raises its own error for invalid JSON
+        return f"Error decoding JSON response from Codacy. URL: {api_url}"
+    except Exception as e:
+        return f"An unexpected error occurred: {e}. URL: {api_url}"
+
 @mcp_server.resource("fact://random")
 async def fact_resource():
     """

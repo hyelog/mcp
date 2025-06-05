@@ -10,11 +10,13 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
     -   Provides a `manage_note` tool for CRUD (Create, Read, Update, Delete) operations on notes. Notes are stored in an SQLite database file named `mcp_database.db` (created automatically in the same directory if it doesn't exist).
     -   Provides a `get_public_fact` tool that fetches a random fact from `https://uselessfacts.jsph.pl/api/v2/facts/random`.
     -   Exposes a `fact://random` resource that also provides a random fact.
+    -   Provides a `query_codacy` tool that interacts with the Codacy API (requires `CODACY_API_TOKEN` environment variable to be set). It can fetch project-level code quality metrics such as issues and coverage. Parameters include `provider` (e.g., 'gh'), `organization`, `project_name`, and `metric` (e.g., 'issues', 'coverage').
 -   **`client.py`**:
     -   Implements an MCP client to connect to and interact with `server.py`.
     -   It initializes an MCP session, lists available tools and resources.
     -   It tests the `fact://random` resource and the `get_public_fact` tool.
     -   It tests the `manage_note` tool by adding a note, listing notes, viewing the added note, deleting it, and then attempting to view the deleted note.
+    -   Demonstrates calling the `query_codacy` tool with example parameters, reminding the user to configure their API token and project details.
 -   **`requirements.txt`**:
     -   Contains the list of Python dependencies required to run the project.
 -   **`mcp_database.db`**:
@@ -28,7 +30,13 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
     pip install -r requirements.txt
     ```
 
-2.  **Run the Client (which starts the Server):**
+2.  **Set Codacy API Token (Optional for Codacy feature):**
+    If you intend to use the `query_codacy` tool, you must set the `CODACY_API_TOKEN` environment variable.
+    For Linux/macOS: `export CODACY_API_TOKEN="your_actual_codacy_api_token"`
+    For Windows: `set CODACY_API_TOKEN="your_actual_codacy_api_token"`
+    Replace `"your_actual_codacy_api_token"` with your personal Codacy API token. The client example also requires you to update placeholder values for provider, organization, and project name to test this feature.
+
+3.  **Run the Client (which starts the Server):**
     Execute the `client.py` script. The client is configured to automatically start the `server.py` script in the background using stdio for communication.
     ```bash
     python client.py
