@@ -187,6 +187,19 @@ async def fact_resource():
     """
     return await get_public_fact()
 
+@mcp_server.prompt()
+def generate_commit_message(changes: str) -> str:
+    """
+    Generates a structured prompt to help write a commit message based on changes.
+
+    Parameters:
+    - changes (str): A description of the changes made.
+
+    Returns:
+    - str: A formatted string to guide commit message creation.
+    """
+    return f"Please write a concise and informative commit message for the following changes: \"{changes}\". Structure it with a short subject line (max 50 chars), a blank line, and then a more detailed body if necessary."
+
 # Main execution block to run the MCP server
 if __name__ == "__main__":
     print("Starting MCP server...")

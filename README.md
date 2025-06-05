@@ -11,12 +11,13 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
     -   Provides a `get_public_fact` tool that fetches a random fact from `https://uselessfacts.jsph.pl/api/v2/facts/random`.
     -   Exposes a `fact://random` resource that also provides a random fact.
     -   Provides a `query_codacy` tool that interacts with the Codacy API (requires `CODACY_API_TOKEN` environment variable to be set). It can fetch project-level code quality metrics such as issues and coverage. Parameters include `provider` (e.g., 'gh'), `organization`, `project_name`, and `metric` (e.g., 'issues', 'coverage').
+    -   Defines an MCP Prompt named `generate_commit_message` (using `@mcp_server.prompt()`) that takes a `changes` string and returns a formatted string to help guide commit message creation.
 -   **`client.py`**:
     -   Implements an MCP client to connect to and interact with `server.py`.
     -   It initializes an MCP session, lists available tools and resources.
     -   It tests the `fact://random` resource and the `get_public_fact` tool.
     -   It tests the `manage_note` tool by adding a note, listing notes, viewing the added note, deleting it, and then attempting to view the deleted note.
-    -   Demonstrates calling the `query_codacy` tool with example parameters, reminding the user to configure their API token and project details.
+    -   Demonstrates calling the `query_codacy` tool with example parameters, reminding the user to configure their API token and project details. It also shows how to use `session.get_prompt()` to retrieve the `generate_commit_message` MCP Prompt from the server.
 -   **`requirements.txt`**:
     -   Contains the list of Python dependencies required to run the project.
 -   **`mcp_database.db`**:
@@ -55,3 +56,4 @@ This project demonstrates a simple MCP (Meta-protocol Communication Platform) se
 -   **Stdio Transport:** The client uses `StdioServerParameters` and `stdio_client` to manage the server lifecycle and communicate with it over standard input/output.
 -   **Error Handling:** Basic error handling in server tools (database and API errors) and client-side error printing.
 -   **Async Operations:** Use of `async` and `await` for non-blocking operations in both server tools (for API calls) and the client.
+    -   **MCP Prompts:** Definition and usage of an MCP Prompt (`generate_commit_message`) on the server, callable by clients via `get_prompt`.

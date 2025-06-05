@@ -183,6 +183,32 @@ async def main():
                     print(f"Exception during prompt demo call (this might be expected): {e_prompt}")
                 print("--- End of manage_note prompting demonstration ---")
 
+                # --- Demonstrate get_prompt for generate_commit_message ---
+                print("\n--- Demonstrating get_prompt for 'generate_commit_message' ---")
+                example_changes = "Fixed a critical bug in the payment processing module and updated the API documentation accordingly."
+                print(f"Requesting 'generate_commit_message' prompt with changes: \"{example_changes}\"")
+
+                try:
+                    commit_prompt_result = await session.get_prompt(
+                        "generate_commit_message",
+                        {"changes": example_changes}
+                    )
+                    print(f"Prompt Name: generate_commit_message")
+
+                    if commit_prompt_result.messages:
+                        print("  Messages from Prompt:")
+                        for msg in commit_prompt_result.messages:
+                            if hasattr(msg, 'content') and hasattr(msg.content, 'text'):
+                                print(f"    - Role: {msg.role}, Content: \"{msg.content.text}\"")
+                            else:
+                                print(f"    - (Message with unexpected structure: {msg})")
+                    else:
+                        print("  (No messages returned from prompt)")
+
+                except Exception as e_get_prompt:
+                    print(f"Error calling get_prompt for 'generate_commit_message': {e_get_prompt}")
+                print("--- End of get_prompt demonstration ---")
+
     except Exception as e:
         print(f"An error occurred in the client: {e}")
         import traceback
