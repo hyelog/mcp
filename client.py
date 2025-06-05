@@ -7,12 +7,66 @@
 
 import asyncio
 import re # For parsing note ID from server responses
+import json # For parsing JSON responses
 from mcp.client.session import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.streamable_http import streamablehttp_client
 
 # Define the parameters for starting the MCP server using stdio.
 # The client will run `python server.py` to start the server.
 server_params = StdioServerParameters(command="python", args=["server.py"])
+
+async def call_external_maps_server():
+    print("\n--- Attempting to connect to External Google Maps MCP Server ---")
+    # IMPORTANT: User must replace this URL with their actual running Google Maps MCP Server endpoint
+    EXTERNAL_MCP_SERVER_URL = "http://localhost:8000/mcp"
+    # This URL is a placeholder from the MCP SDK examples for streamable_http.
+    # The actual Google Maps server might run on a different port or path.
+
+    print(f"Targeting external server URL: {EXTERNAL_MCP_SERVER_URL}")
+    print("Ensure the external Google Maps MCP server is running and accessible at this URL.")
+    print("Also, ensure that the external server itself is configured with a valid Google Maps API key.")
+
+    example_address = "1600 Amphitheatre Parkway, Mountain View, CA"
+
+    try:
+        # Connect to the external server using streamablehttp_client
+        async with streamablehttp_client(EXTERNAL_MCP_SERVER_URL) as (read_stream, write_stream, _):
+            print("Connection established with external server.")
+            async with ClientSession(read_stream, write_stream) as session:
+                print("Initializing session with external server...")
+                await session.initialize()
+                print("Session initialized.")
+
+                print(f"Calling 'maps_geocode' tool with address: \"{example_address}\"")
+                tool_result = await session.call_tool(
+                    "maps_geocode",
+                    {"address": example_address}
+                )
+
+                print("Response from 'maps_geocode' tool:")
+                if tool_result.content and tool_result.content[0] and hasattr(tool_result.content[0], 'text'):
+                    response_data_text = tool_result.content[0].text
+                    print(f"  Raw content: {response_data_text}")
+                    try:
+                        parsed_data = json.loads(response_data_text)
+                        print(f"  Parsed data:")
+                        print(f"    Location: {parsed_data.get('location')}")
+                        print(f"    Formatted Address: {parsed_data.get('formatted_address')}")
+                        print(f"    Place ID: {parsed_data.get('place_id')}")
+                    except json.JSONDecodeError:
+                        print("  (Content is not JSON, displayed as raw text above)")
+                elif tool_result.content and tool_result.content[0]:
+                     print(f"  (Content received, but not in expected TextContent format: {tool_result.content[0]})")
+                else:
+                    print("  No content returned from tool.")
+
+    except ConnectionRefusedError:
+        print(f"Error: Connection refused. Is the external server running at {EXTERNAL_MCP_SERVER_URL}?")
+    except Exception as e:
+        print(f"An error occurred while interacting with the external server: {e}")
+    finally:
+        print("--- End of External Google Maps MCP Server Demonstration ---")
 
 async def main():
     """
@@ -237,6 +291,8 @@ async def main():
                 except Exception as e_llm_tool:
                     print(f"Error calling 'ask_openai_llm' tool: {e_llm_tool}")
                 print("--- End of 'ask_openai_llm' tool demonstration ---")
+
+                await call_external_maps_server()
 
     except Exception as e:
         print(f"An error occurred in the client: {e}")
